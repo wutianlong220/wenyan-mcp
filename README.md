@@ -170,4 +170,42 @@ cover: /Users/lei/Downloads/result_image.jpg
 
 ---
 
-如需更多功能扩展或反馈建议，欢迎提 [issue](https://github.com/caol64/wenyan-mcp/issues)。
+## 如何调试
+
+使用 Inspector 进行简单调试：
+
+```
+npx @modelcontextprotocol/inspector
+```
+
+启动成功出现类似提示：
+
+```
+🔗 Open inspector with token pre-filled:
+   http://localhost:6274/?MCP_PROXY_AUTH_TOKEN=761c05058aa4f84ad02280e62d7a7e52ec0430d00c4c7a61492cca59f9eac299
+   (Auto-open is disabled when authentication is enabled)
+```
+
+访问以上链接即可打开调试页面。
+
+![debug](data/1.jpg)
+
+1. 正确填写启动命令
+2. 添加环境变量
+3. 点击 Connect
+4. 选择 Tools -> List Tools
+5. 选择要调试的接口
+6. 填入参数并点击 Run Tool
+7. 查看完整参数
+
+---
+
+## 赞助
+
+如果您觉得这个项目不错，可以给我家猫咪买点罐头吃。[喂猫❤️](https://yuzhi.tech/sponsor)
+
+---
+
+## License
+
+Apache License Version 2.0

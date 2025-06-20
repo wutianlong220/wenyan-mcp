@@ -72,6 +72,9 @@ async function uploadImage(imageUrl: string, accessToken: string, fileName?: str
 }
 
 async function uploadImages(content: string, accessToken: string): Promise<string> {
+    if (!content.includes('<img')) {
+        return "";
+    }
     const dom = new JSDOM(content);
     const document = dom.window.document;
     const images = Array.from(document.querySelectorAll('img'));

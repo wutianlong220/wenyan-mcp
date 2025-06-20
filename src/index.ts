@@ -34,6 +34,7 @@ const server = new Server(
             resources: {},
             tools: {},
             prompts: {},
+            // logging: {},
         },
     }
 );
@@ -86,6 +87,10 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
  */
 server.setRequestHandler(CallToolRequestSchema, async (request) => {
     if (request.params.name === "publish_article") {
+        // server.sendLoggingMessage({
+        //     level: "debug",
+        //     data: JSON.stringify(request.params.arguments),
+        // });
         const content = String(request.params.arguments?.content || "");
         const themeId = String(request.params.arguments?.theme_id || "");
         let theme: Theme | undefined = themes["default"];
