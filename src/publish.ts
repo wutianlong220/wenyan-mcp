@@ -65,19 +65,23 @@ async function uploadImage(imageUrl: string, accessToken: string, fileName?: str
         return await uploadMaterial('image', new Blob([buffer]), imageName, accessToken);
     } else {
         const localImagePath = hostImagePath ? imageUrl.replace(hostImagePath, dockerImagePath) : imageUrl;
-        const fileName = path.basename(localImagePath);
+        const fileNameFromLocal = path.basename(localImagePath);
+        const ext = path.extname(fileNameFromLocal);
+        const imageName = fileName ?? (ext === "" ? `${fileNameFromLocal}.jpg` : fileNameFromLocal);
         const file = await fileFromPath(localImagePath);
-        return await uploadMaterial('image', file, fileName, accessToken);
+        return await uploadMaterial('image', file, imageName, accessToken);
     }
 }
 
-async function uploadImages(content: string, accessToken: string): Promise<string> {
+async function uploadImages(content: string, accessToken: string): Promise<{ html: string, firstImageId: string }> {
     if (!content.includes('<img')) {
-        return "";
+        return { html: content, firstImageId: "" };
     }
+
     const dom = new JSDOM(content);
     const document = dom.window.document;
     const images = Array.from(document.querySelectorAll('img'));
+
     const uploadPromises = images.map(async (element) => {
         const dataSrc = element.getAttribute('src');
         if (dataSrc) {
@@ -94,13 +98,15 @@ async function uploadImages(content: string, accessToken: string): Promise<strin
 
     const mediaIds = (await Promise.all(uploadPromises)).filter(Boolean);
     const firstImageId = mediaIds[0] || "";
-    return firstImageId;
+
+    const updatedHtml = dom.serialize();
+    return { html: updatedHtml, firstImageId };
 }
 
 export async function publishToDraft(title: string, content: string, cover: string) {
     try {
         const accessToken = await fetchAccessToken();
-        const firstImageId = await uploadImages(content, accessToken.access_token);
+        const { html, firstImageId } = await uploadImages(content, accessToken.access_token);
         let thumbMediaId = "";
         if (cover) {
             const resp = await uploadImage(cover, accessToken.access_token, "cover.jpg");
@@ -121,7 +127,7 @@ export async function publishToDraft(title: string, content: string, cover: stri
             body: JSON.stringify({
                 articles: [{
                     title: title,
-                    content: content,
+                    content: html,
                     thumb_media_id: thumbMediaId,
                 }]
             })
