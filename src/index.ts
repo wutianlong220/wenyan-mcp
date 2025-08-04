@@ -87,42 +87,55 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
  */
 server.setRequestHandler(CallToolRequestSchema, async (request) => {
     if (request.params.name === "publish_article") {
-        // server.sendLoggingMessage({
-        //     level: "debug",
-        //     data: JSON.stringify(request.params.arguments),
-        // });
-        const content = String(request.params.arguments?.content || "");
-        const themeId = String(request.params.arguments?.theme_id || "");
-        let theme: Theme | undefined = themes["default"];
-        if (themeId) {
-            theme = themes[themeId];
-            if (!theme) {
-                theme = Object.values(themes).find(
-                    theme => theme.name.toLowerCase() === themeId.toLowerCase()
-                );
+        try {
+            console.error("Starting publish_article request");
+            // server.sendLoggingMessage({
+            //     level: "debug",
+            //     data: JSON.stringify(request.params.arguments),
+            // });
+            const content = String(request.params.arguments?.content || "");
+            const themeId = String(request.params.arguments?.theme_id || "");
+            console.error("Content length:", content.length);
+            console.error("Theme ID:", themeId);
+            let theme: Theme | undefined = themes["default"];
+            if (themeId) {
+                theme = themes[themeId];
+                if (!theme) {
+                    theme = Object.values(themes).find(
+                        theme => theme.name.toLowerCase() === themeId.toLowerCase()
+                    );
+                }
             }
+
+            if (!theme) {
+                throw new Error("Invalid theme ID");
+            }
+            // console.log(markdown);
+            const preHandlerContent = handleFrontMatter(content);
+
+            const html = await renderMarkdown(preHandlerContent.body, theme.id);
+            // console.log(html);
+            const title = preHandlerContent.title ?? "this is title";
+            const cover = preHandlerContent.cover ?? "";
+            console.error("Title:", title);
+            console.error("Cover:", cover);
+            console.error("About to call publishToDraft");
+            const response = await publishToDraft(title, html, cover);
+            console.error("publishToDraft completed successfully");
+
+            return {
+                content: [
+                    {
+                        type: "text",
+                        text: `Your article was successfully published to '公众号草稿箱'. The media ID is ${response.media_id}.`,
+                    },
+                ],
+            };
+        } catch (error) {
+            console.error("Error in publish_article:", error);
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            throw new Error(`Failed to publish article: ${errorMessage}`);
         }
-
-        if (!theme) {
-            throw new Error("Invalid theme ID");
-        }
-        // console.log(markdown);
-        const preHandlerContent = handleFrontMatter(content);
-
-        const html = await renderMarkdown(preHandlerContent.body, theme.id);
-        // console.log(html);
-        const title = preHandlerContent.title ?? "this is title";
-        const cover = preHandlerContent.cover ?? "";
-        const response = await publishToDraft(title, html, cover);
-
-        return {
-            content: [
-                {
-                    type: "text",
-                    text: `Your article was successfully published to '公众号草稿箱'. The media ID is ${response.media_id}.`,
-                },
-            ],
-        };
     } else if (request.params.name === "list_themes") {
         const themeResources = Object.entries(themes).map(([id, theme]) => ({
             type: "text",

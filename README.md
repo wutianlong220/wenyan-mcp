@@ -1,211 +1,141 @@
-# 文颜 MCP Server
+# 微信公众号文章发布工具
 
-![logo](data/wenyan-mcp.png)
+一个本地文件监控脚本，可以自动将Markdown文章发布到微信公众号草稿箱。
 
-## Overview
+## 功能特点
 
-文颜 MCP Server 是一个基于模型上下文协议（Model Context Protocol, MCP）的服务器组件，支持将 Markdown 格式的文章发布至微信公众号草稿箱，并使用与 [文颜](https://yuzhi.tech/wenyan) 相同的主题系统进行排版。
+✅ **自动监控**：监控指定目录的文件变化，自动发布新文章
+✅ **统一目录**：文章和图片放在同一个目录中，方便管理
+✅ **智能识别**：自动识别文章和图片文件
+✅ **错误处理**：完善的错误处理和日志记录
+✅ **文件管理**：已处理的文件自动移动到processed目录
 
-https://github.com/user-attachments/assets/2c355f76-f313-48a7-9c31-f0f69e5ec207
+## 快速开始
 
-使用场景：
-
-- [让AI帮你管理公众号的排版和发布](https://babyno.top/posts/2025/06/let-ai-help-you-manage-your-gzh-layout-and-publishing/)
-
-支持的主题效果预览：
-
-- [内置主题](https://yuzhi.tech/docs/wenyan/theme)
-
-## Features
-
-- 列出并选择支持的文章主题
-- 使用内置主题对 Markdown 内容排版
-- 发布文章到微信公众号草稿箱
-- 自动上传本地或网络图片
-
----
-
-## 使用方式
-
-### 方式一：本地运行
-
-#### 编译
-
-确保已安装 [Node.js](https://nodejs.org/) 环境：
+### 1. 设置环境变量
 
 ```bash
-git clone https://github.com/caol64/wenyan-mcp.git
-cd wenyan-mcp
+export WECHAT_APP_ID=your_app_id
+export WECHAT_APP_SECRET=your_app_secret
+```
 
+### 2. 安装依赖
+
+```bash
 npm install
-npx tsc -b && npm run copy-assets
+npm run build
 ```
 
-#### 与 MCP Client 集成
-
-在你的 MCP 配置文件中加入以下内容：
-
-```json
-{
-  "mcpServers": {
-    "wenyan-mcp": {
-      "name": "公众号助手",
-      "command": "node",
-      "args": [
-        "Your/path/to/wenyan-mcp/dist/index.js"
-      ],
-      "env": {
-        "WECHAT_APP_ID": "your_app_id",
-        "WECHAT_APP_SECRET": "your_app_secret"
-      }
-    }
-  }
-}
-```
-
-> 说明：
->
-> * `WECHAT_APP_ID` 微信公众号平台的 App ID
-> * `WECHAT_APP_SECRET` 微信平台的 App Secret
-
----
-
-### 方式二：使用 Docker 运行（推荐）
-
-适合部署到服务器环境，或与本地 AI 工具链集成。
-
-#### 构建镜像
+### 3. 启动监控
 
 ```bash
-docker build -t wenyan-mcp .
+./start-publisher.sh
 ```
 
-#### 与 MCP Client 集成
+### 4. 创建文章
 
-在你的 MCP 配置文件中加入以下内容：
+在 `~/Desktop/Articles/` 目录中创建Markdown文章：
 
-```json
-{
-  "mcpServers": {
-    "wenyan-mcp": {
-      "name": "公众号助手",
-      "command": "docker",
-      "args": [
-        "run",
-        "--rm",
-        "-i",
-        "-v", "/your/host/image/path:/mnt/host-downloads",
-        "-e", "WECHAT_APP_ID=your_app_id",
-        "-e", "WECHAT_APP_SECRET=your_app_secret",
-        "-e", "HOST_IMAGE_PATH=/your/host/image/path",
-        "wenyan-mcp"
-      ]
-    }
-  }
-}
+```markdown
+---
+title: 我的第一篇文章
+cover: cover-image.jpg
+---
+
+# 文章标题
+
+这是文章内容...
 ```
 
-> 说明：
->
-> * `-v` 挂载宿主机目录，使容器内部可以访问本地图片。与环境变量`HOST_IMAGE_PATH`保持一致。你的 `Markdown` 文章内的本地图片应该都放置在该目录中，docker会自动将它们映射到容器内。容器无法读取在该目录以外的图片。
-> * `-e` 注入docker容器的环境变量：
-> * `WECHAT_APP_ID` 微信公众号平台的 App ID
-> * `WECHAT_APP_SECRET` 微信平台的 App Secret
-> * `HOST_IMAGE_PATH` 宿主机图片目录
+将封面图片 `cover-image.jpg` 放在同一目录中，保存文件后脚本会自动发布。
 
----
-
-## 微信公众号 IP 白名单
-
-请务必将服务器 IP 加入公众号平台的 IP 白名单，以确保上传接口调用成功。
-详细配置说明请参考：[https://yuzhi.tech/docs/wenyan/upload](https://yuzhi.tech/docs/wenyan/upload)
-
----
-
-## 配置说明（Frontmatter）
-
-为了可以正确上传文章，需要在每一篇 Markdown 文章的开头添加一段`frontmatter`，提供`title`、`cover`两个字段：
-
-```md
----
-title: 在本地跑一个大语言模型(2) - 给模型提供外部知识库
-cover: /Users/lei/Downloads/result_image.jpg
----
-```
-
-* `title` 是文章标题，必填。
-* `cover` 是文章封面，支持本地路径和网络图片：
-
-  * 如果正文有至少一张图片，可省略，此时将使用其中一张作为封面；
-  * 如果正文无图片，则必须提供 cover。
-
----
-
-## 关于图片自动上传
-
-* 支持图片路径：
-
-  * 本地路径（如：`/Users/lei/Downloads/result_image.jpg`）
-  * 网络路径（如：`https://example.com/image.jpg`）
-
----
-
-## 示例文章格式
-
-```md
----
-title: 在本地跑一个大语言模型(2) - 给模型提供外部知识库
-description: Make your local large language models (LLMs) smarter! This guide shows how to use LangChain and RAG to let them retrieve data from external knowledge bases, improving answer accuracy.
-cover: /Users/lei/Downloads/result_image.jpg
----
-
-在[上一篇文章](https://babyno.top/posts/2024/02/running-a-large-language-model-locally/)中，我们展示了如何在本地运行大型语言模型。本篇将介绍如何让模型从外部知识库中检索定制数据，提升答题准确率，让它看起来更“智能”。
-
-## 准备模型
-
-访问 `Ollama` 的模型页面，搜索 `qwen`，我们使用支持中文语义的“[通义千问](https://ollama.com/library/qwen:7b)”模型进行实验。
-
-![](https://mmbiz.qpic.cn/mmbiz_jpg/Jsq9IicjScDVUjkPc6O22ZMvmaZUzof5bLDjMyLg2HeAXd0icTvlqtL7oiarSlOicTtiaiacIxpVOV1EeMKl96PhRPPw/640?wx_fmt=jpeg)
-```
-
----
-
-## 如何调试
-
-使用 Inspector 进行简单调试：
+## 目录结构
 
 ```
-npx @modelcontextprotocol/inspector
+~/Desktop/Articles/
+├── my-article.md          # 文章文件
+├── cover-image.jpg        # 封面图片
+└── processed/             # 已处理的文件
+    ├── my-article.md
+    └── cover-image.jpg
 ```
 
-启动成功出现类似提示：
+## 使用方法
 
+### 启动监控
+
+```bash
+# 使用启动脚本（推荐）
+./start-publisher.sh
+
+# 直接运行
+node publish-monitor.js
 ```
-🔗 Open inspector with token pre-filled:
-   http://localhost:6274/?MCP_PROXY_AUTH_TOKEN=761c05058aa4f84ad02280e62d7a7e52ec0430d00c4c7a61492cca59f9eac299
-   (Auto-open is disabled when authentication is enabled)
+
+### 测试功能
+
+```bash
+node test-publish.js
 ```
 
-访问以上链接即可打开调试页面。
+## 文章格式
 
-![debug](data/1.jpg)
+文章必须包含正确的frontmatter格式：
 
-1. 正确填写启动命令
-2. 添加环境变量
-3. 点击 Connect
-4. 选择 Tools -> List Tools
-5. 选择要调试的接口
-6. 填入参数并点击 Run Tool
-7. 查看完整参数
-
+```markdown
+---
+title: 文章标题
+cover: cover-image.jpg
+theme: orangeheart  # 可选
 ---
 
-## 赞助
+文章内容...
+```
 
-如果您觉得这个项目不错，可以给我家猫咪买点罐头吃。[喂猫❤️](https://yuzhi.tech/sponsor)
+## 支持的格式
 
----
+- **文章格式**：`.md`
+- **图片格式**：`.jpg`, `.jpeg`, `.png`, `.gif`
 
-## License
+## 注意事项
 
-Apache License Version 2.0
+1. **网络环境**：发布前请关闭VPN以确保IP稳定
+2. **IP白名单**：确保当前IP已添加到微信公众号IP白名单
+3. **文件路径**：封面图片路径使用相对路径（相对于article目录）
+
+## 故障排除
+
+### 常见问题
+
+1. **IP白名单错误**
+   ```bash
+   curl ifconfig.me  # 查看当前IP
+   ```
+
+2. **环境变量未设置**
+   ```bash
+   echo $WECHAT_APP_ID
+   echo $WECHAT_APP_SECRET
+   ```
+
+3. **权限错误**
+   ```bash
+   ls -la ~/Desktop/Articles/
+   ```
+
+## 详细文档
+
+- [使用说明](使用说明.md) - 详细的使用指南
+- [方案1](方案1.md) - 本地脚本方案说明
+
+## 停止监控
+
+按 `Ctrl+C` 停止监控脚本。
+
+## 技术支持
+
+如果遇到问题，请检查：
+1. 网络连接是否正常
+2. 环境变量是否正确设置
+3. 文件格式是否符合要求
+4. 微信公众号配置是否正确

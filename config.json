@@ -1,0 +1,13 @@
+{
+  "articleDir": "/Users/dabaobaodemac/Desktop/Articles",
+  "processedDir": "/Users/dabaobaodemac/Desktop/Articles/processed",
+  "themes": {
+    "default": "default",
+    "vibrant": "orangeheart",
+    "colorful": "rainbow"
+  },
+  "autoPublish": true,
+  "backupEnabled": true,
+  "supportedImageFormats": [".jpg", ".jpeg", ".png", ".gif"],
+  "fileWatchDelay": 1000
+} 
